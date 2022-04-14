@@ -18,9 +18,14 @@ func main() {
 	ss.SaveToFile("station_results.json", "json")
 
 	cs := ofgem.NewCertificateSearch()
+	if err := cs.Countries("England,Wales"); err != nil {
+		log.Fatal(err)
+	}
+
 	if err := cs.SetPeriod(2, 2022); err != nil {
 		log.Fatal(err)
 	}
+
 	if err := cs.GetResults(); err != nil {
 		log.Fatal(err)
 	}

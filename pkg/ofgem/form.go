@@ -13,15 +13,26 @@ import (
 	"strings"
 )
 
-type Form struct {
-	StartURL string
+type form struct {
+	startURL string
 	action   string
 	client   http.Client
 	cookies  *cookiejar.Jar
-	data     *FormData
+
+	inputs        map[string]*input
+	dropdowns     map[string]*dropDown
+	selects       map[string]*selector
+	types         map[string]string
+	labels        map[string]string
+	postbacks     map[string]bool
+	actionURL     string
+	updateRqd     bool
+	exportUrlBase string
+
+	debugDelta bool
 }
 
-func NewForm(start string) *Form {
+func newForm(start string) *form {
 	jar, err := cookiejar.New(nil)
 	if err != nil {
 		log.Fatalf("Unable to create a cookie jar??: %s", err)
@@ -33,56 +44,61 @@ func NewForm(start string) *Form {
 	t.MaxConnsPerHost = 100
 	t.MaxIdleConnsPerHost = 100
 
-	form := &Form{
-		StartURL: MakeUrl(start, true),
+	form := &form{
+		startURL: MakeUrl(start, true),
 		client:   http.Client{Jar: jar, Transport: t},
 		cookies:  jar,
-		data:     NewFormData(),
+
+		inputs:    make(map[string]*input),
+		dropdowns: make(map[string]*dropDown),
+		selects:   make(map[string]*selector),
+		types:     make(map[string]string),
+		postbacks: make(map[string]bool),
+		labels:    make(map[string]string),
 	}
-	if err := form.Get(); err != nil {
+	if err := form.get(); err != nil {
 		log.Fatalf("Unable to create a new form instance for URL %s", start)
 	}
 	return form
 }
 
-func (f *Form) Get() error {
+func (f *form) get() error {
 	if len(f.cookies.Cookies(baseOfgemURL)) == 0 {
-		err := f.doGet(MakeUrl("ReportManager.aspx?ReportVisibility=1&ReportCategory=0", true))
-		if err != nil {
+		if err := f.doGet(MakeUrl("ReportManager.aspx?ReportVisibility=1&ReportCategory=0", true)); err != nil {
 			return err
 		}
 	}
-	err := f.doGet(f.StartURL)
-	if err != nil {
+
+	if err := f.doGet(f.startURL); err != nil {
 		return err
 	}
 
-	f.data.setValueById("ReportViewer$ctl10", "ltr")
-	f.data.setValueById("ReportViewer$ctl11", "standards")
-	f.data.addInput("__ASYNCPOST", "hidden", "true")
+	// Set some standard values
+	f.setValueById("ReportViewer$ctl10", "ltr")
+	f.setValueById("ReportViewer$ctl11", "standards")
+	// Add the control fields we need that are normally added by scripts.
+	f.addInput("__ASYNCPOST", "hidden", "true")
+	f.addInput("__LASTFOCUS", "hidden", "")
+	f.addInput("__EVENTTARGET", "hidden", "")
+	f.addInput("__EVENTARGUMENT", "hidden", "")
+	f.addInput("ScriptManager1", "hidden", "")
 
 	return nil
 }
 
-func (f *Form) Post() error {
-	return f.doPost()
+func (f *form) Submit(tgt string) error {
+	f.setValueByLabel("Page Size", "25")
+	return f.doPost(tgt)
 }
 
-func (f *Form) Submit(script string) error {
-	f.data.setValueById("__EVENTTARGET", "ReportViewer$ctl09$Reserved_AsyncLoadTarget")
-	f.data.addInput("ScriptManager1", "hidden", script)
-	f.data.setValueByLabel("Page Size", "25")
-	return f.doPost()
+func (f form) ExportAvailable() bool {
+	return len(f.exportUrlBase) > 0
 }
 
-func (f Form) ExportAvailable() bool {
-	return len(f.data.exportUrlBase) > 0
-}
+func (f form) getData(xfmt string) ([]byte, error) {
+	url := MakeUrl(f.exportUrlBase+xfmt, false)
 
-func (f Form) GetData(xfmt string) ([]byte, error) {
-	url := MakeUrl(f.data.exportUrlBase+xfmt, false)
-
-	fmt.Printf("Data - GET: %s\n", url)
+	log.Printf("GET Data: %s\n", url)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
@@ -98,33 +114,11 @@ func (f Form) GetData(xfmt string) ([]byte, error) {
 	return content, err
 }
 
-func (f *Form) SetValueByLabel(lbl string, val string) error {
-	if err := f.data.setValueByLabel(lbl, val); err != nil {
+func (f *form) setValueForLabel(lbl string, val string) error {
+	if err := f.setValueByLabel(lbl, val); err != nil {
 		return err
-	}
-	if f.data.updateRqd {
-		log.Print("Need to update the form...")
-		if err := f.doPost(); err != nil {
-			return err
-		}
 	}
 	return nil
-}
-
-func (f *Form) doGet(url string) error {
-	log.Printf("GET: %s\n", url)
-
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return err
-	}
-	resp, err := f.client.Do(req)
-	if err != nil {
-		return err
-	}
-	err = f.data.Parse(resp)
-	//f.data.Dump()
-	return err
 }
 
 func saveResponseBody(resp *http.Response, fn string) error {
@@ -157,11 +151,31 @@ func logPostData(postdata url.Values) {
 	log.Print("END OF POST DATA")
 }
 
-func (f *Form) doPost() error {
-	log.Printf("POST: %s\n", f.data.actionURL)
-	postdata := f.data.getPostValues()
-	logPostData(postdata)
-	actionUrl := MakeUrl(f.data.actionURL, true)
+func (f *form) doGet(url string) error {
+	log.Printf("GET: %s\n", url)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return err
+	}
+	resp, err := f.client.Do(req)
+	if err != nil {
+		return err
+	}
+	if err := f.parseResponse(resp); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (f *form) doPost(tgt string) error {
+	log.Printf("POST: %s\n", f.actionURL)
+
+	f.setValueById("__EVENTTARGET", tgt)
+	f.setValueById("ScriptManager1", "ScriptManager1|"+tgt)
+
+	postdata := f.getPostValues()
+	//logPostData(postdata)
+	actionUrl := MakeUrl(f.actionURL, true)
 
 	req, err := http.NewRequest("POST", actionUrl, strings.NewReader(postdata.Encode()))
 	if err != nil {
@@ -172,7 +186,7 @@ func (f *Form) doPost() error {
 	req.Header.Add("User-Agent", "Mozilla")
 	req.Header.Add("X-Requested-With", "XMLHttpRequest")
 	req.Header.Add("X-MicrosoftAjax", "Delta=true")
-	ref, err := url.QueryUnescape(f.data.actionURL)
+	ref, err := url.QueryUnescape(f.actionURL)
 	if err == nil {
 		req.Header.Add("Referer", ref)
 	}
@@ -183,7 +197,7 @@ func (f *Form) doPost() error {
 		return err
 	}
 
-	if err := processDelta(resp, f.data); err != nil {
+	if err := processDelta(resp, f); err != nil {
 		return err
 	}
 	return nil

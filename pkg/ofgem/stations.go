@@ -12,7 +12,7 @@ import (
 type StationSearch struct {
 	Results []OfgemStation
 
-	form *Form
+	form *form
 }
 
 type OfgemStation struct {
@@ -45,29 +45,29 @@ type StationReport struct {
 }
 
 func NewStationSearch() *StationSearch {
-	return &StationSearch{form: NewForm("ReportViewer.aspx?ReportPath=/Renewables/Accreditation/AccreditedStationsExternalPublic&ReportVisibility=1&ReportCategory=1")}
+	return &StationSearch{form: newForm("ReportViewer.aspx?ReportPath=/Renewables/Accreditation/AccreditedStationsExternalPublic&ReportVisibility=1&ReportCategory=1")}
 }
 
 func (ss *StationSearch) Scheme(scheme string) error {
-	return ss.form.SetValueByLabel("Scheme", scheme)
+	return ss.form.setValueByLabel("Scheme", scheme)
 }
 
 func (ss *StationSearch) CommissionYear(year int) error {
-	return ss.form.SetValueByLabel("Commission Year", fmt.Sprintf("%d", year))
+	return ss.form.setValueByLabel("Commission Year", fmt.Sprintf("%d", year))
 }
 
 func (ss *StationSearch) CommissionMonth(month int) error {
-	return ss.form.SetValueByLabel("Commission Month", time.Month(month).String()[:3])
+	return ss.form.setValueByLabel("Commission Month", time.Month(month).String()[:3])
 }
 
 func (ss *StationSearch) GetStations() error {
-	if err := ss.form.Submit("ScriptManager1|ReportViewer$ctl04$ctl00"); err != nil {
+	if err := ss.form.Submit("ReportViewer$ctl04$ctl00"); err != nil {
 		return err
 	}
 	if !ss.form.ExportAvailable() {
 		return fmt.Errorf("Unable to retrieve data?")
 	}
-	data, err := ss.form.GetData("XML")
+	data, err := ss.form.getData("XML")
 	if err != nil {
 		return err
 	}

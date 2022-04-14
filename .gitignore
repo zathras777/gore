@@ -17,3 +17,6 @@
 gore
 *.xml
 *.json
+*.data
+*.html
+*.log

@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-type Select struct {
+type selector struct {
 	ID      string
 	options []*selectoption
 }
@@ -17,8 +17,8 @@ type selectoption struct {
 	selected bool
 }
 
-func newSelectFromHTML(elem *HTMLElement) *Select {
-	s := &Select{ID: elem.Attr("name")}
+func newSelectFromHTML(elem *HTMLElement) *selector {
+	s := &selector{ID: elem.Attr("name")}
 	elem.ForEach("option", func(e *HTMLElement) {
 		if strings.Contains(e.Text, "&lt;Select&nbsp;a&nbsp;Value&gt;") {
 			fmt.Println("Skipping not useful select option...")
@@ -30,7 +30,7 @@ func newSelectFromHTML(elem *HTMLElement) *Select {
 	return s
 }
 
-func (s Select) Value() string {
+func (s selector) Value() string {
 	for _, opt := range s.options {
 		if opt.selected {
 			return opt.value
@@ -40,7 +40,7 @@ func (s Select) Value() string {
 	return ""
 }
 
-func (s *Select) setValue(val string) error {
+func (s *selector) setValue(val string) error {
 	found := false
 	for _, opt := range s.options {
 		opt.selected = false

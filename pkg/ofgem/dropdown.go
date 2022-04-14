@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-type DropDown struct {
+type dropDown struct {
 	ID       string
 	selected []int
 	options  map[int]string
@@ -26,11 +26,11 @@ func dropdownOptionId(id string) int {
 	return did
 }
 
-func (dd *DropDown) addOptionLabel(id, label string) {
+func (dd *dropDown) addOptionLabel(id, label string) {
 	dd.options[dropdownOptionId(id)] = label
 }
 
-func (dd *DropDown) updateSelected(idlist string) {
+func (dd *dropDown) updateSelected(idlist string) {
 	for _, v := range strings.Split(idlist, ",") {
 		n, err := strconv.Atoi(v)
 		if err != nil {
@@ -40,7 +40,7 @@ func (dd *DropDown) updateSelected(idlist string) {
 	}
 }
 
-func (dd DropDown) getTextValue() string {
+func (dd dropDown) getTextValue() string {
 	vals := make([]string, len(dd.selected))
 	for i, n := range dd.selected {
 		vals[i] = dd.options[n+2]
@@ -48,7 +48,7 @@ func (dd DropDown) getTextValue() string {
 	return strings.Trim(strings.Join(vals, ", "), " ")
 }
 
-func (dd DropDown) selectedAsString() string {
+func (dd dropDown) selectedAsString() string {
 	nums := make([]string, len(dd.selected))
 	for i, num := range dd.selected {
 		nums[i] = fmt.Sprintf("%d", num)
@@ -56,7 +56,7 @@ func (dd DropDown) selectedAsString() string {
 	return strings.Join(nums, ",")
 }
 
-func (dd *DropDown) setValues(vals string) error {
+func (dd *dropDown) setValues(vals string) error {
 	var newopts []int
 	for _, v := range strings.Split(vals, ",") {
 		val := strings.Trim(v, " ")
@@ -74,7 +74,7 @@ func (dd *DropDown) setValues(vals string) error {
 	return nil
 }
 
-func (dd DropDown) addPostValues(values url.Values) {
+func (dd dropDown) addPostValues(values url.Values) {
 	//	log.Printf("POST: %s => %s", dd.ID+"$divDropDown$ctl01$HiddenIndices", dd.selectedAsString())
 	//	log.Printf("POST: %s => '%s'", dd.ID+"$divDropDown$txtValue", dd.getTextValue())
 	values.Set(dd.ID+"$divDropDown$ctl01$HiddenIndices", dd.selectedAsString())

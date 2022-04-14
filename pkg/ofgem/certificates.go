@@ -13,7 +13,7 @@ import (
 type CertificateSearch struct {
 	Results []OfgemCertificate
 
-	form *Form
+	form *form
 }
 
 type OfgemCertificate struct {
@@ -49,37 +49,45 @@ type CertificateReport struct {
 }
 
 func NewCertificateSearch() *CertificateSearch {
-	return &CertificateSearch{form: NewForm("ReportViewer.aspx?ReportPath=/DatawarehouseReports/CertificatesExternalPublicDataWarehouse&ReportVisibility=1&ReportCategory=2")}
+	return &CertificateSearch{form: newForm("ReportViewer.aspx?ReportPath=/DatawarehouseReports/CertificatesExternalPublicDataWarehouse&ReportVisibility=1&ReportCategory=2")}
+}
+
+func (cs *CertificateSearch) Debug(onoff bool) {
+	cs.form.debugDelta = onoff
 }
 
 func (cs *CertificateSearch) SetPeriod(month, year int) error {
-	if err := cs.form.SetValueByLabel("Output Period \"Month From\":", time.Month(month).String()[:3]); err != nil {
+	if err := cs.form.setValueByLabel("Output Period \"Month From\":", time.Month(month).String()[:3]); err != nil {
 		return err
 	}
-	if err := cs.form.SetValueByLabel("Output Period \"Month To\":", time.Month(month).String()[:3]); err != nil {
+	if err := cs.form.setValueByLabel("Output Period \"Month To\":", time.Month(month).String()[:3]); err != nil {
 		return err
 	}
-	if err := cs.form.SetValueByLabel("Output Period \"Year From\":", fmt.Sprintf("%d", year)); err != nil {
+	if err := cs.form.setValueByLabel("Output Period \"Year From\":", fmt.Sprintf("%d", year)); err != nil {
 		return err
 	}
-	if err := cs.form.SetValueByLabel("Output Period \"Year To\":", fmt.Sprintf("%d", year)); err != nil {
+	if err := cs.form.setValueByLabel("Output Period \"Year To\":", fmt.Sprintf("%d", year)); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (cs *CertificateSearch) Scheme(schemes string) error {
-	return cs.form.SetValueByLabel("Scheme:", strings.ToUpper(schemes))
+	return cs.form.setValueByLabel("Scheme:", strings.ToUpper(schemes))
+}
+
+func (cs *CertificateSearch) Countries(countries string) error {
+	return cs.form.setValueByLabel("Country:", countries)
 }
 
 func (cs *CertificateSearch) GetResults() error {
-	if err := cs.form.Submit("ScriptManager1|ReportViewer$ctl09$Reserved_AsyncLoadTarget"); err != nil {
+	if err := cs.form.Submit("ReportViewer$ctl09$Reserved_AsyncLoadTarget"); err != nil {
 		return err
 	}
 	if !cs.form.ExportAvailable() {
 		return fmt.Errorf("Unable to retrieve data as no export URL available")
 	}
-	data, err := cs.form.GetData("XML")
+	data, err := cs.form.getData("XML")
 	if err != nil {
 		return err
 	}

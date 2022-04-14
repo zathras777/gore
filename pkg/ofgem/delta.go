@@ -20,13 +20,21 @@ type deltaInfo struct {
 }
 
 var exportBaseRe = regexp.MustCompile(`\"ExportUrlBase\":\"(.*?)\"`)
+var deltaIter int = 0
 
-func processDelta(resp *http.Response, fd *FormData) error {
+func processDelta(resp *http.Response, f *form) error {
 	raw, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
 	content := string(raw)
+
+	if f.debugDelta == true {
+		ioutil.WriteFile(fmt.Sprintf("delta_%02d.data", deltaIter), raw, 0644)
+		log.Printf("Processing delta response - saved to delta_%02d.data", deltaIter)
+		deltaIter++
+	}
+
 	var elements []deltaInfo
 	for pos := 0; pos < len(content); {
 		di, used := getNextInfo(string(content[pos:]))
@@ -35,20 +43,23 @@ func processDelta(resp *http.Response, fd *FormData) error {
 	}
 
 	if len(elements) == 0 {
-		ioutil.WriteFile("delta.data", raw, 0644)
-		return fmt.Errorf("Unable to process the delta response elements. Stored in delta.data for review")
+		ioutil.WriteFile("delta_error.data", raw, 0644)
+		return fmt.Errorf("Unable to process the delta response elements. Stored in delta_error.data for review")
 	}
 
 	if elements[0].ct != "#" {
 		log.Fatal("Incorrect initial delta segment receieved?")
 	}
 
-	for _, element := range elements[1:] {
+	for n, element := range elements[1:] {
+		if f.debugDelta == true {
+			log.Printf("Delta %d: %d bytes, %s, %s", n, element.size, element.ct, element.tgt)
+		}
 		switch element.ct {
 		case "hiddenField":
-			fd.setValueById(element.tgt, element.content)
+			f.setValueById(element.tgt, element.content)
 		case "formAction":
-			fd.actionURL = element.content
+			f.actionURL = element.content
 		case "pageRedirect":
 			url, err := url.PathUnescape(element.content)
 			if err != nil {
@@ -58,10 +69,12 @@ func processDelta(resp *http.Response, fd *FormData) error {
 		case "scriptStartupBlock":
 			if strings.Contains(element.content, "ExportUrlBase") {
 				match := exportBaseRe.FindStringSubmatch(element.content)
-				fd.exportUrlBase = strings.ReplaceAll(match[1], "\\u0026", "&")
+				f.exportUrlBase = strings.ReplaceAll(match[1], "\\u0026", "&")
 			}
-			//		default:
-			//			log.Printf("Unhandled content: %s\n", element.ct)
+		default:
+			if f.debugDelta == true {
+				log.Printf("Unhandled content: %s\n", element.ct)
+			}
 		}
 	}
 	return nil

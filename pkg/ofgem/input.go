@@ -1,7 +1,5 @@
 package ofgem
 
-import "log"
-
 type input struct {
 	id    string
 	typ   string
@@ -39,8 +37,8 @@ func valueFromElement(elem *HTMLElement) (string, bool) {
 			return elem.Attr("value"), true
 		}
 		return "", false
-	default:
-		log.Printf("Unhandled input type: %s", elem.Attr("type"))
+		//	default:
+		//		log.Printf("Unhandled input type: %s", elem.Attr("type"))
 	}
 	return elem.Attr("value"), true
 }

@@ -16,12 +16,15 @@ type HTMLElement struct {
 	DOM        *goquery.Selection
 }
 
-func (fd *FormData) Parse(resp *http.Response) error {
+func (f *form) parseResponse(resp *http.Response) error {
 	content, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
-
+	//	if f.debugDelta == true {
+	//ioutil.WriteFile("response.html", content, 0644)
+	//log.Printf("Response received and stored into response.html")
+	//	}
 	rdr := bytes.NewReader(content)
 	doc, err := goquery.NewDocumentFromReader(rdr)
 	if err != nil {
@@ -31,22 +34,22 @@ func (fd *FormData) Parse(resp *http.Response) error {
 	doc.Find("form").Each(func(_ int, s *goquery.Selection) {
 		action, ck := s.Attr("action")
 		if ck {
-			fd.actionURL = action
+			f.actionURL = action
 		}
 		for _, n := range s.Nodes {
 			e := NewHTMLElement(n, s)
 
 			e.ForEach("input", func(elem *HTMLElement) {
-				fd.addOrUpdateInput(elem)
+				f.addOrUpdateInput(elem)
 			})
 			e.ForEach("select", func(elem *HTMLElement) {
-				fd.addOrUpdateSelect(elem)
+				f.addOrUpdateSelect(elem)
 			})
 			e.ForEach("label", func(elem *HTMLElement) {
-				fd.recordLabel(elem)
+				f.recordLabel(elem)
 			})
 			e.ForEach("script", func(elem *HTMLElement) {
-				fd.recordScript(elem)
+				f.recordScript(elem)
 			})
 		}
 	})
