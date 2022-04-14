@@ -16,11 +16,16 @@ $ ./gore
 
 ## Issues
 
-- need to add ability to set dropdown values
+- ~~need to add ability to set dropdown values~~
 - add elexon api options from [pywind](https://github.com/zathras777/pywind)
 - improve the export formatting
 - add a full command line app
 - reduce the verbosity and improve the logging
+
+## Updates
+
+### 14th April 2022
+I decided to make the entire form a private structure, so took the opportunity to flatten out the Form & FormData resulting in one single form. This works better and allows better integration between them. The updating of elements now works better and the form generation has been improved. DropDown elements can now have values set, but setting the Scheme to anything but the default results in a page redirect? Country seems to work and I will look at the others, but see no reason why setting the scheme should fail - but it does :-(
 
 ## Pull Requests
 
