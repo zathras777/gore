@@ -48,7 +48,6 @@ func (s *Select) setValue(val string) error {
 			if found {
 				return fmt.Errorf("Value %s matches more than one select option??", val)
 			}
-			fmt.Printf("Select: '%s' vs '%s' => %s\n", opt.name, val, opt.value)
 			opt.selected = true
 			found = true
 		}

@@ -21,8 +21,6 @@ type deltaInfo struct {
 
 var exportBaseRe = regexp.MustCompile(`\"ExportUrlBase\":\"(.*?)\"`)
 
-//var iter int = 0
-
 func processDelta(resp *http.Response, fd *FormData) error {
 	raw, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -35,9 +33,6 @@ func processDelta(resp *http.Response, fd *FormData) error {
 		pos += used
 		elements = append(elements, di)
 	}
-
-	//	ioutil.WriteFile(fmt.Sprintf("delta_%d.data", iter), raw, 0644)
-	//	iter += 1
 
 	if len(elements) == 0 {
 		ioutil.WriteFile("delta.data", raw, 0644)
@@ -65,8 +60,8 @@ func processDelta(resp *http.Response, fd *FormData) error {
 				match := exportBaseRe.FindStringSubmatch(element.content)
 				fd.exportUrlBase = strings.ReplaceAll(match[1], "\\u0026", "&")
 			}
-		default:
-			log.Printf("Unhandled content: %s\n", element.ct)
+			//		default:
+			//			log.Printf("Unhandled content: %s\n", element.ct)
 		}
 	}
 	return nil

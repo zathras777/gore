@@ -10,8 +10,8 @@ import (
 
 type DropDown struct {
 	ID       string
-	Selected []int
-	Options  map[int]string
+	selected []int
+	options  map[int]string
 }
 
 func dropdownId(id string) string {
@@ -27,7 +27,7 @@ func dropdownOptionId(id string) int {
 }
 
 func (dd *DropDown) addOptionLabel(id, label string) {
-	dd.Options[dropdownOptionId(id)] = label
+	dd.options[dropdownOptionId(id)] = label
 }
 
 func (dd *DropDown) updateSelected(idlist string) {
@@ -36,27 +36,47 @@ func (dd *DropDown) updateSelected(idlist string) {
 		if err != nil {
 			log.Fatalf("Cannot convert %s into a number: %s", v, err)
 		}
-		dd.Selected = append(dd.Selected, n)
+		dd.selected = append(dd.selected, n)
 	}
 }
 
 func (dd DropDown) getTextValue() string {
-	vals := make([]string, len(dd.Selected))
-	for i, n := range dd.Selected {
-		vals[i] = dd.Options[n+2]
+	vals := make([]string, len(dd.selected))
+	for i, n := range dd.selected {
+		vals[i] = dd.options[n+2]
 	}
-	return strings.Join(vals, ", ")
+	return strings.Trim(strings.Join(vals, ", "), " ")
 }
 
 func (dd DropDown) selectedAsString() string {
-	nums := make([]string, len(dd.Selected))
-	for i, num := range dd.Selected {
+	nums := make([]string, len(dd.selected))
+	for i, num := range dd.selected {
 		nums[i] = fmt.Sprintf("%d", num)
 	}
 	return strings.Join(nums, ",")
 }
 
+func (dd *DropDown) setValues(vals string) error {
+	var newopts []int
+	for _, v := range strings.Split(vals, ",") {
+		val := strings.Trim(v, " ")
+		for opt, name := range dd.options {
+			if name == val {
+				newopts = append(newopts, opt-2)
+			}
+		}
+	}
+	if len(newopts) == 0 {
+		return fmt.Errorf("Unable to find any options that match '%s' in DropDown", vals)
+	}
+	log.Printf("DropDown: Changing selected from %v to %v", dd.selected, newopts)
+	dd.selected = newopts
+	return nil
+}
+
 func (dd DropDown) addPostValues(values url.Values) {
+	//	log.Printf("POST: %s => %s", dd.ID+"$divDropDown$ctl01$HiddenIndices", dd.selectedAsString())
+	//	log.Printf("POST: %s => '%s'", dd.ID+"$divDropDown$txtValue", dd.getTextValue())
 	values.Set(dd.ID+"$divDropDown$ctl01$HiddenIndices", dd.selectedAsString())
 	values.Set(dd.ID+"$divDropDown$txtValue", dd.getTextValue())
 }

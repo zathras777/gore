@@ -8,6 +8,7 @@ import (
 	"net/http/cookiejar"
 	"net/url"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -102,7 +103,7 @@ func (f *Form) SetValueByLabel(lbl string, val string) error {
 		return err
 	}
 	if f.data.updateRqd {
-		fmt.Println("Need to update the form...")
+		log.Print("Need to update the form...")
 		if err := f.doPost(); err != nil {
 			return err
 		}
@@ -138,26 +139,28 @@ func saveResponseBody(resp *http.Response, fn string) error {
 	return nil
 }
 
+func logPostData(postdata url.Values) {
+	keys := make([]string, 0, len(postdata))
+	for k := range postdata {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	log.Print("POST DATA:")
+	for _, k := range keys {
+		val := postdata[k][0]
+		if len(val) > 100 {
+			val = val[:100]
+		}
+		log.Printf("  %s : %s\n", k, val)
+	}
+	log.Print("END OF POST DATA")
+}
+
 func (f *Form) doPost() error {
 	log.Printf("POST: %s\n", f.data.actionURL)
-	postdata := f.data.GetPostValues()
-
-	// Debugging...
-	/*
-		keys := make([]string, 0, len(postdata))
-		for k := range postdata {
-			keys = append(keys, k)
-		}
-		sort.Strings(keys)
-
-		for _, k := range keys {
-			val := postdata[k][0]
-			if len(val) > 100 {
-				val = val[:100]
-			}
-			fmt.Printf("-> %s : %s\n", k, val)
-		}
-	*/
+	postdata := f.data.getPostValues()
+	logPostData(postdata)
 	actionUrl := MakeUrl(f.data.actionURL, true)
 
 	req, err := http.NewRequest("POST", actionUrl, strings.NewReader(postdata.Encode()))

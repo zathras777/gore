@@ -68,6 +68,10 @@ func (cs *CertificateSearch) SetPeriod(month, year int) error {
 	return nil
 }
 
+func (cs *CertificateSearch) Scheme(schemes string) error {
+	return cs.form.SetValueByLabel("Scheme:", strings.ToUpper(schemes))
+}
+
 func (cs *CertificateSearch) GetResults() error {
 	if err := cs.form.Submit("ScriptManager1|ReportViewer$ctl09$Reserved_AsyncLoadTarget"); err != nil {
 		return err

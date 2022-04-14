@@ -1,6 +1,6 @@
 package ofgem
 
-import "fmt"
+import "log"
 
 type input struct {
 	id    string
@@ -40,7 +40,7 @@ func valueFromElement(elem *HTMLElement) (string, bool) {
 		}
 		return "", false
 	default:
-		fmt.Printf("Unhandled input type: %s", elem.Attr("type"))
+		log.Printf("Unhandled input type: %s", elem.Attr("type"))
 	}
 	return elem.Attr("value"), true
 }

@@ -39,7 +39,7 @@ func NewFormData() *FormData {
 	return fd
 }
 
-func (fd FormData) GetPostValues() url.Values {
+func (fd FormData) getPostValues() url.Values {
 	values := url.Values{}
 	for _, inp := range fd.inputs {
 		values.Set(inp.id, inp.Value())
@@ -94,6 +94,10 @@ func (fd *FormData) recordLabel(elem *HTMLElement) {
 	id := strings.ReplaceAll(elem.Attr("for"), "_", "$")
 	name := strings.ReplaceAll(elem.Text, "\u00a0", " ")
 	if !strings.Contains(id, "$divDropDown") {
+		if strings.Contains("TrueFalseNULL", name) {
+			return
+		}
+		id = strings.ReplaceAll(id, "$txtValue", "")
 		fd.Labels[name] = id
 		return
 	}
@@ -115,7 +119,7 @@ func (fd *FormData) recordScript(elem *HTMLElement) {
 }
 
 func (fd *FormData) setPostback(name string, val bool) {
-	if strings.Contains(name, "$divDropDown") {
+	if strings.Contains(name, "$ddDropDownButton") {
 		name = dropdownId(name)
 	}
 	fd.Postbacks[name] = val
@@ -159,7 +163,7 @@ func (fd *FormData) setValueById(id, val string) (err error) {
 	case "Select":
 		err = fd.Selects[id].setValue(val)
 	case "DropDown":
-		log.Printf("Implement DropDown updating!!!")
+		err = fd.Dropdowns[id].setValues(val)
 	}
 	if fd.checkPostback(id) {
 		fd.inputs["__EVENTTARGET"].value = id
@@ -185,7 +189,7 @@ func (fd FormData) Dump() {
 			fmt.Printf("Input: %s -> %s\n", nm, val)
 		case "DropDown":
 			dd := fd.getDropDown(nm, false)
-			fmt.Printf("DropDown: %s -> %d options listed, %d selected [ %v ]\n", nm, len(dd.Options), len(dd.Selected), dd.Selected)
+			fmt.Printf("DropDown: %s -> %d options listed, %d selected [ %v ]\n", nm, len(dd.options), len(dd.selected), dd.selected)
 			fmt.Println(dd.getTextValue())
 		case "Select":
 			fmt.Printf("Select: %s -> %d options listed -> %s\n", nm, len(fd.Selects[nm].options), fd.Selects[nm].Value())
@@ -214,7 +218,7 @@ func (fd *FormData) getDropDown(id string, create bool) *DropDown {
 		if !create {
 			log.Fatalf("Unable to find a DropDown with an ID of %s", did)
 		}
-		dd = &DropDown{ID: did, Options: make(map[int]string)}
+		dd = &DropDown{ID: did, options: make(map[int]string)}
 		fd.Dropdowns[did] = dd
 		fd.Types[did] = "DropDown"
 	}
