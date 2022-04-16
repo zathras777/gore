@@ -14,9 +14,10 @@
 # Dependency directories (remove the comment below to include it)
 # vendor/
 
-gore
+cmd/gore/gore
 *.xml
 *.json
 *.data
 *.html
 *.log
+elexon.key
