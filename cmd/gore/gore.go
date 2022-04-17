@@ -100,6 +100,9 @@ func main() {
 	if date != "" {
 		params["SettlementDate"] = date
 	}
+	if verbose {
+		fmt.Printf("Params for Query: %v\n", params)
+	}
 
 	if len(flag.Args()) == 0 {
 		fmt.Println("No command entered.")
@@ -109,12 +112,8 @@ func main() {
 
 	for _, cmd := range flag.Args() {
 		switch strings.ToLower(cmd) {
-		case "bm1320":
-			ap, err = elexon.BM1320(elexonKeyFn)
-		case "bm1420":
-			ap, err = elexon.BM1420(elexonKeyFn)
 		default:
-			fmt.Printf("Unhandled command: %s\n", cmd)
+			ap, err = elexon.NewElexonReport(cmd)
 		}
 		if err != nil {
 			fmt.Printf("Unable to process command %s\nError: %s", cmd, err)
@@ -123,9 +122,13 @@ func main() {
 	}
 
 	if ap != nil {
-		fmt.Printf("Getting data for Elexon Report %s...\n", ap.Report)
-		err = ap.GetData(params)
-		if err != nil {
+		fmt.Printf("Getting data for Elexon Report %s [ %s ]...\n", strings.ToUpper(ap.Report.Name), ap.Report.Description)
+		if err = ap.ReadKeyFile(elexonKeyFn); err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		if err = ap.GetData(params); err != nil {
 			fmt.Println(err)
 			return
 		}

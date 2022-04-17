@@ -35,15 +35,31 @@ Usage of gore.exe:
         Specify a year (default -1)
 ```
 
+For example,
+
+```
+$ gore\cmd\gore> .\gore.exe -elexonkey ..\..\elexon.key -date 2022-02-01 -settlementperiod 30 b1320   
+UK Renewables App
+=================
+
+Getting data for Elexon Report B1320 [ Congestion Management Measures: Countertrading ]...
+B1320 API call succeeded, but no data returned
+```
+
 ## Issues
 
 - ~~need to add ability to set dropdown values~~
 - ~~add elexon api options from [pywind](https://github.com/zathras777/pywind)~~
 - improve the export formatting
 - ~~add a full command line app~~
-- reduce the verbosity and improve the logging
+- ~~reduce the verbosity and improve the logging~~
+- add testing
+- add docs on how to use command line app
 
 ## Updates
+
+### 17th April 2022
+Changed up how the Elexon reports are handled to make it simpler to add any that are needed. I need to work out how to handle the reports that return multiple blocks, e.g. DERBMDATA. Also need to look at how to handle the multi level results that get returned and how to easily access them in a sensible way. Not yet added any decene output to the command line app but hopefully will get to that soon.
 
 ### 16th April 2022
 I've added the start of a command line app and also a couple of the Elexon API commands. It's a work in progress but things should work and this seems to give me a base to build from in a similar manner to the python code I wrote. The app is basic and needs a lot of code sorted out and moved around :-)

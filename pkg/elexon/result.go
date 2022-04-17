@@ -12,6 +12,14 @@ func (ar ElexonAPIResult) Int(name string) int {
 	return v.(int)
 }
 
+func (ar ElexonAPIResult) Float(name string) float64 {
+	v, ck := ar.data[name]
+	if !ck {
+		return -1
+	}
+	return v.(float64)
+}
+
 func (ar ElexonAPIResult) String(name string) string {
 	v, ck := ar.data[name]
 	if !ck {

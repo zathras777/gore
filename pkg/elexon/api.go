@@ -10,15 +10,11 @@ import (
 )
 
 type ElexonAPI struct {
+	Report ElexonReport
 	Result ElexonAPIResult
 	Items  []ElexonAPIResult
-	Report string
 
-	key        string
-	report     string
-	version    string
-	itemName   string
-	itemFields map[string]string
+	key string
 }
 
 var metadataMap = map[string]string{
@@ -30,40 +26,73 @@ var metadataMap = map[string]string{
 	"queryString":    "string",
 }
 
-func newElexonAPI(keyFn, report, version, itemName string, fields map[string]string) (*ElexonAPI, error) {
+func NewElexonReport(report string) (*ElexonAPI, error) {
+	cfg, ck := ElexonReports[strings.ToLower(report)]
+	if !ck {
+		return nil, fmt.Errorf("Unable to find a configured report %s", report)
+	}
+	return &ElexonAPI{Report: cfg}, nil
+}
+
+func (ap *ElexonAPI) ReadKeyFile(keyFn string) error {
 	content, err := ioutil.ReadFile(keyFn)
 	if err != nil {
-		return nil, fmt.Errorf("Unable to read API key from %s: %s", keyFn, err)
+		return fmt.Errorf("Unable to read API key from %s: %s", keyFn, err)
 	}
-	return &ElexonAPI{
-		key:        strings.Trim(string(content), " "),
-		Report:     report,
-		version:    version,
-		itemName:   itemName,
-		itemFields: fields}, nil
+	ap.key = strings.Trim(string(content), " ")
+	return nil
 }
 
 func (ap *ElexonAPI) GetData(args map[string]string) error {
 	params := url.Values{}
-	params.Add("APIKey", ap.key)
+	_, ck := args["APIKey"]
+	if !ck && len(ap.key) == 0 {
+		return fmt.Errorf("You either need to supply the APIKey parameter or call ReadKeyFile() before getting data")
+	}
+	if !ck {
+		params.Add("APIKey", ap.key)
+	}
 	params.Add("ServiceType", "xml")
+
+	for _, rqd := range ap.Report.RqdParams {
+		_, ck := args[rqd]
+		if !ck {
+			return fmt.Errorf("Calls to Report %s require the %s parameter to be set", ap.Report.Name, rqd)
+		}
+	}
 	for k, v := range args {
 		params.Add(k, v)
 	}
-	url := fmt.Sprintf("https://api.bmreports.com/BMRS/%s/%s?%s", ap.Report, ap.version, params.Encode())
+	if ap.Report.updateParams != nil {
+		ap.Report.updateParams(params)
+	}
+
+	url := fmt.Sprintf("https://api.bmreports.com/BMRS/%s/%s?%s", ap.Report.Name, ap.Report.Version, params.Encode())
 	resp, err := http.Get(url)
 	if err != nil {
 		return err
 	}
+	if resp.StatusCode != 200 {
+		fmt.Println(resp)
+		return fmt.Errorf("Elexon server responded with a status code %d. Url was %s", resp.StatusCode, url)
+	}
 	content, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Printf("%s API call FAILED: %s", ap.Report, err)
+		log.Printf("%s API call FAILED: %s", ap.Report.Name, err)
 		return err
 	}
+	if len(content) == 0 {
+		log.Printf("Empty response received. Status Code %d\n\n", resp.StatusCode)
+		fmt.Println(resp)
+		return fmt.Errorf("Empty response receieved from Elexon")
+	}
 
-	ioutil.WriteFile(fmt.Sprintf("%s.xml", ap.Report), content, 0644)
+	ioutil.WriteFile(fmt.Sprintf("%s.xml", ap.Report.Name), content, 0644)
 
-	xmlN := parseXML(content)
+	xmlN, err := parseXML(content)
+	if err != nil {
+		return err
+	}
 	mMap, err := xmlN.getAsMap("responseMetadata", metadataMap)
 	if err != nil {
 		return err
@@ -75,19 +104,19 @@ func (ap *ElexonAPI) GetData(args map[string]string) error {
 			return err
 		}
 		for _, item := range items {
-			itemMap := item.asMap(metadataMap)
+			itemMap := item.asMap(ap.Report.Fields)
 			if err != nil {
 				return err
 			}
 			result := ElexonAPIResult{itemMap}
 			ap.Items = append(ap.Items, result)
 		}
-		log.Printf("%s API call returned %d items", ap.report, len(ap.Items))
+		log.Printf("%s API call returned %d items", ap.Report.Name, len(ap.Items))
 	} else if ap.Result.Int("httpCode") == 204 {
-		return fmt.Errorf("%s API call succeeded, but no data returned", ap.report)
+		return fmt.Errorf("%s API call succeeded, but no data returned", ap.Report.Name)
 	} else {
-		log.Printf("%s API call failed: %s [Query: %s]", ap.report, ap.Result.String("description"), ap.Result.String("queryString"))
-		return fmt.Errorf("%s API call failed: %s", ap.report, ap.Result.String("description"))
+		log.Printf("%s API call failed: %s [Query: %s]", ap.Report.Name, ap.Result.String("description"), ap.Result.String("queryString"))
+		return fmt.Errorf("%s API call failed: %s", ap.Report.Name, ap.Result.String("description"))
 	}
 	return nil
 }
@@ -108,43 +137,4 @@ func (ap *ElexonAPI) addFromXML(nodes xmlNode) error {
 	}
 	fmt.Println(meta)
 	return nil
-}
-
-func BM1320(keyFn string) (*ElexonAPI, error) {
-	var fields = map[string]string{
-		"timeSeriesID":     "string",
-		"settlementDate":   "string",
-		"settlementPeriod": "string",
-		"quantity":         "string",
-		"flowDirection":    "string",
-		"reasonCode":       "string",
-		"documentType":     "string",
-		"processType":      "string",
-		"resolution":       "string",
-		"curveType":        "string",
-		"activeFlag":       "string",
-		"documentID":       "string",
-		"documentRevNum":   "string",
-	}
-	return newElexonAPI(keyFn, "B1320", "V1", "CongestionCounterTrade", fields)
-}
-
-func BM1420(keyFn string) (*ElexonAPI, error) {
-	var fields = map[string]string{
-		"documentType":              "string",
-		"businessType":              "string",
-		"processType":               "string",
-		"timeSeriesID":              "string",
-		"powerSystemResourceType":   "string",
-		"year":                      "int",
-		"bMUnitID":                  "string",
-		"registeredResourceEICCode": "string",
-		"nominal":                   "int",
-		"nGCBMUnitID":               "string",
-		"registeredResourceName":    "string",
-		"activeFlag":                "bool",
-		"documentID":                "string",
-		"implementationDate":        "date",
-	}
-	return newElexonAPI(keyFn, "B1420", "V1", "ConfigurationData", fields)
 }
