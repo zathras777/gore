@@ -15,8 +15,10 @@
 # vendor/
 
 cmd/gore/gore
+cmd/gore/output
 *.xml
 *.json
+*.csv
 *.data
 *.html
 *.log

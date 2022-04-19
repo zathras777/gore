@@ -1,51 +1,37 @@
 package ofgem
 
 import (
-	"encoding/json"
-	"encoding/xml"
 	"fmt"
+	"gore/pkg/gore"
 	"io/ioutil"
-	"strings"
 	"time"
 )
 
 type StationSearch struct {
-	Results []OfgemStation
-
 	form *form
 }
 
-type OfgemStation struct {
-	GeneratorID           string `xml:"GeneratorID,attr"`
-	StatusName            string `xml:",attr"`
-	GeneratorName         string `xml:",attr"`
-	SchemeName            string `xml:",attr"`
-	Capacity              string `xml:",attr"`
-	Country               string `xml:",attr"`
-	TechnologyName        string `xml:",attr"`
-	OutputType            string `xml:",attr"`
-	AccreditationDate     string `xml:",attr"`
-	CommissionDate        string `xml:",attr"`
-	OrganisationContact   string `xml:"textbox6,attr"`
-	OrganisationAddress   string `xml:"textbox61,attr"`
-	OrganisationFaxNumber string `xml:"FaxNumber,attr"`
-	StationAddress        string `xml:"textbox65,attr"`
-}
-
-type StationDetailCollection struct {
-	Details []OfgemStation `xml:"Detail"`
-}
-
-type StationTable struct {
-	DetailCollection StationDetailCollection `xml:"Detail_Collection"`
-}
-
-type StationReport struct {
-	Table StationTable `xml:"tableAccreditation"`
+var stationAttrMap = map[string]string{
+	"GeneratorID":                     "string",
+	"StatusName":                      "string",
+	"GeneratorName":                   "string",
+	"SchemeName":                      "string",
+	"Capacity":                        "float",
+	"Country":                         "string",
+	"TechnologyName":                  "string",
+	"OutputType":                      "string",
+	"AccreditationDate":               "date",
+	"CommissionDate":                  "date",
+	"textbox6:OrganisationContact":    "string",
+	"textbox61:OrganisationAddress":   "string",
+	"FaxNumber:OrganisationFaxNumber": "string",
+	"textbox65:StationAddress":        "string",
 }
 
 func NewStationSearch() *StationSearch {
-	return &StationSearch{form: newForm("ReportViewer.aspx?ReportPath=/Renewables/Accreditation/AccreditedStationsExternalPublic&ReportVisibility=1&ReportCategory=1")}
+	return &StationSearch{
+		form: newForm("ReportViewer.aspx?ReportPath=/Renewables/Accreditation/AccreditedStationsExternalPublic&ReportVisibility=1&ReportCategory=1"),
+	}
 }
 
 func (ss *StationSearch) Scheme(scheme string) error {
@@ -60,44 +46,39 @@ func (ss *StationSearch) CommissionMonth(month int) error {
 	return ss.form.setValueByLabel("Commission Month", time.Month(month).String()[:3])
 }
 
-func (ss *StationSearch) GetStations() error {
+func (ss *StationSearch) AccreditationYear(year int) error {
+	return ss.form.setValueByLabel("Accreditation Year", fmt.Sprintf("%d", year))
+}
+
+func (ss *StationSearch) AccreditationMonth(month int) error {
+	return ss.form.setValueByLabel("Accreditation Month", time.Month(month).String()[:3])
+}
+
+func (ss *StationSearch) GetResults() (result gore.ResultSet) {
+	result.QueryName = "stationsearch"
 	if err := ss.form.Submit("ReportViewer$ctl04$ctl00"); err != nil {
-		return err
+		result.Query.Error = err
+		return
 	}
 	if !ss.form.ExportAvailable() {
-		return fmt.Errorf("Unable to retrieve data?")
+		result.Query.Error = fmt.Errorf("Unable to retrieve data?")
+		return
 	}
 	data, err := ss.form.getData("XML")
 	if err != nil {
-		return err
+		result.Query.Error = err
+		return
 	}
+	result.Query.Completed = true
 	ioutil.WriteFile("station_data.xml", data, 0644)
-	return ss.parseXML(data)
-}
-
-func (ss StationSearch) SaveToFile(fn, xfmt string) (err error) {
-	var xdata []byte
-	switch strings.ToLower(xfmt) {
-	case "json":
-		xdata, err = json.Marshal(ss.Results)
-	case "xml":
-		xdata, err = xml.MarshalIndent(ss.Results, "", "    ")
-	default:
-		err = fmt.Errorf("Unknown export format: %s", xfmt)
-	}
+	xmlData, err := gore.ParseXML(data)
 	if err != nil {
-		return err
+		result.Query.Error = err
+		return
 	}
-	return ioutil.WriteFile(fn, xdata, 0644)
-}
-
-func (ss *StationSearch) parseXML(content []byte) error {
-	var report StationReport
-	err := xml.Unmarshal(content, &report)
-	if err != nil {
-		return err
+	details, err := xmlData.GetAll("tableAccreditation.Detail_Collection.Detail")
+	for _, detail := range details {
+		result.Results = append(result.Results, gore.ResultItem{Data: detail.AttrAsMap(stationAttrMap)})
 	}
-	ss.Results = report.Table.DetailCollection.Details
-	return nil
-
+	return
 }

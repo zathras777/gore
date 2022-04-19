@@ -14,6 +14,7 @@ type ElexonReport struct {
 	Version      string
 	Fields       map[string]string
 	RqdParams    []string
+	Multi        map[string]string
 	updateParams func(url.Values)
 }
 
@@ -38,6 +39,7 @@ var ElexonReports = map[string]ElexonReport{
 			"documentRevNum":   "string",
 		},
 		[]string{"SettlementDate", "Period"},
+		map[string]string{},
 		nil,
 	},
 	"b1330": {
@@ -58,6 +60,7 @@ var ElexonReports = map[string]ElexonReport{
 			"documentRevNum":   "string",
 		},
 		[]string{"Year", "Month"},
+		map[string]string{},
 		textMonth,
 	},
 	"b1420": {
@@ -81,6 +84,7 @@ var ElexonReports = map[string]ElexonReport{
 			"implementationDate":        "date",
 		},
 		[]string{"Year"},
+		map[string]string{},
 		nil,
 	},
 
@@ -110,6 +114,7 @@ var ElexonReports = map[string]ElexonReport{
 
 		},
 		[]string{"SettlementDate", "Period"},
+		map[string]string{},
 		nil,
 	},
 	"b1630": {
@@ -135,6 +140,7 @@ var ElexonReports = map[string]ElexonReport{
 			"documentRevNum":              "string",
 		},
 		[]string{"SettlementDate", "Period"},
+		map[string]string{},
 		nil,
 	},
 	"derbmdata": {
@@ -143,6 +149,7 @@ var ElexonReports = map[string]ElexonReport{
 		"v1",
 		map[string]string{},
 		[]string{},
+		map[string]string{},
 		nil,
 	},
 	"fuelinst": {
@@ -175,6 +182,7 @@ var ElexonReports = map[string]ElexonReport{
 			"activeFlag":                     "bool",
 		},
 		[]string{},
+		map[string]string{},
 		nil,
 	},
 }

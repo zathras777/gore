@@ -2,6 +2,7 @@ package elexon
 
 import (
 	"fmt"
+	"gore/pkg/gore"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -10,9 +11,9 @@ import (
 )
 
 type ElexonAPI struct {
-	Report ElexonReport
-	Result ElexonAPIResult
-	Items  []ElexonAPIResult
+	Report       ElexonReport
+	Result       gore.ResultSet
+	MultiResults map[string]gore.ResultSet
 
 	key string
 }
@@ -31,7 +32,9 @@ func NewElexonReport(report string) (*ElexonAPI, error) {
 	if !ck {
 		return nil, fmt.Errorf("Unable to find a configured report %s", report)
 	}
-	return &ElexonAPI{Report: cfg}, nil
+	ap := ElexonAPI{Report: cfg}
+	ap.Result.QueryName = ap.Report.Name
+	return &ap, nil
 }
 
 func (ap *ElexonAPI) ReadKeyFile(keyFn string) error {
@@ -89,52 +92,56 @@ func (ap *ElexonAPI) GetData(args map[string]string) error {
 
 	ioutil.WriteFile(fmt.Sprintf("%s.xml", ap.Report.Name), content, 0644)
 
-	xmlN, err := parseXML(content)
+	xmlN, err := gore.ParseXML(content)
 	if err != nil {
 		return err
 	}
-	mMap, err := xmlN.getAsMap("responseMetadata", metadataMap)
-	if err != nil {
+	// Regardless of whether there is a multi dataset response or not, the results of the query
+	// are only sent once. Read them here and create a gore.QueryResult that we can use for subsequent
+	// gore.ReultSet creation.
+	qr := queryResultFromResponse(xmlN)
+	if qr.Error != nil {
+		ap.Result.Query = qr
 		return err
 	}
-	ap.Result.data = mMap
-	if ap.Result.Int("httpCode") == 200 {
-		items, err := xmlN.getAll("responseBody.responseList.item")
+
+	if len(ap.Report.Multi) == 0 {
+		ap.Result.Query = qr
+		items, err := xmlN.GetAll("responseBody.responseList.item")
 		if err != nil {
 			return err
 		}
+
 		for _, item := range items {
-			itemMap := item.asMap(ap.Report.Fields)
+			itemMap := item.AsMap(ap.Report.Fields)
 			if err != nil {
 				return err
 			}
-			result := ElexonAPIResult{itemMap}
-			ap.Items = append(ap.Items, result)
+			result := gore.ResultItem{Data: itemMap}
+			ap.Result.Results = append(ap.Result.Results, result)
 		}
-		log.Printf("%s API call returned %d items", ap.Report.Name, len(ap.Items))
-	} else if ap.Result.Int("httpCode") == 204 {
-		return fmt.Errorf("%s API call succeeded, but no data returned", ap.Report.Name)
-	} else {
-		log.Printf("%s API call failed: %s [Query: %s]", ap.Report.Name, ap.Result.String("description"), ap.Result.String("queryString"))
-		return fmt.Errorf("%s API call failed: %s", ap.Report.Name, ap.Result.String("description"))
+		log.Printf("%s API call returned %d items", ap.Report.Name, len(ap.Result.Results))
 	}
+
 	return nil
 }
 
-func (ap ElexonAPI) IsCapped() bool {
-	return ap.Result.Bool("cappingApplied")
-}
-
-func (ap ElexonAPI) CapLimit() int {
-	return ap.Result.Int("cappingLimit")
-}
-
-func (ap *ElexonAPI) addFromXML(nodes xmlNode) error {
-	meta, err := nodes.get("responseMetadata")
+func queryResultFromResponse(xmlN gore.XmlNode) gore.QueryResult {
+	var qr gore.QueryResult
+	mMap, err := xmlN.GetAsMap("responseMetadata", metadataMap)
 	if err != nil {
-		log.Print(err)
-		return err
+		qr.Completed = false
+		qr.Error = err
+		return qr
 	}
-	fmt.Println(meta)
-	return nil
+	qr.Completed = true
+	if mMap["httpCode"].(int) != 200 && mMap["httpCode"].(int) != 204 {
+		qr.Error = fmt.Errorf("%s: %s", mMap["errorType"].(string), mMap["description"].(string))
+		return qr
+	}
+	if mMap["cappingApplied"].(bool) {
+		qr.Capped = true
+		qr.CapLimit = mMap["cappingLimit"].(int)
+	}
+	return qr
 }
