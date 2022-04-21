@@ -3,14 +3,15 @@ package main
 import (
 	"flag"
 	"fmt"
-	"gore/pkg/elexon"
-	"gore/pkg/gore"
-	"gore/pkg/ofgem"
 	"log"
 	"os"
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/zathras777/gore/pkg/elexon"
+	"github.com/zathras777/gore/pkg/gore"
+	"github.com/zathras777/gore/pkg/ofgem"
 )
 
 var elexonKeyFn string

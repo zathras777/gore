@@ -2,12 +2,13 @@ package elexon
 
 import (
 	"fmt"
-	"gore/pkg/gore"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
 	"strings"
+
+	"github.com/zathras777/gore/pkg/gore"
 )
 
 type ElexonAPI struct {

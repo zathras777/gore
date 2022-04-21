@@ -2,9 +2,10 @@ package ofgem
 
 import (
 	"fmt"
-	"gore/pkg/gore"
 	"io/ioutil"
 	"time"
+
+	"github.com/zathras777/gore/pkg/gore"
 )
 
 type StationSearch struct {

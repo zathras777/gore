@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"gore/pkg/gore"
 	"strings"
+
+	"github.com/zathras777/gore/pkg/gore"
 )
 
 type formatterColumn struct {
