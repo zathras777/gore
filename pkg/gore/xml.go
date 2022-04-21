@@ -91,15 +91,6 @@ func (n XmlNode) AsMap(mapInfo map[string]string) (info map[string]interface{}) 
 			info[node.XMLName.Local] = convert(string(node.Content), typ)
 		}
 	}
-
-	//	for _, elem := range n.Nodes {
-	//		t, ck := mapInfo[elem.XMLName.Local]
-	//		if !ck {
-	//			continue
-	//		}
-	//		info[elem.XMLName.Local] = convert(string(elem.Content), t)
-	//	}
-
 	return
 }
 
@@ -112,11 +103,11 @@ func attrMatch(name string, mapName string) bool {
 
 func (n XmlNode) AttrAsMap(mapInfo map[string]string) (info map[string]interface{}) {
 	info = make(map[string]interface{})
-	for _, elem := range n.Attr {
+	for _, attr := range n.Attr {
 		var final string
-		var elemType string
-		for final, elemType = range mapInfo {
-			if attrMatch(elem.Name.Local, final) {
+		var attrType string
+		for final, attrType = range mapInfo {
+			if attrMatch(attr.Name.Local, final) {
 				if strings.Contains(final, ":") {
 					final = strings.SplitN(final, ":", 2)[1]
 				}
@@ -124,10 +115,10 @@ func (n XmlNode) AttrAsMap(mapInfo map[string]string) (info map[string]interface
 			}
 		}
 		if len(final) == 0 {
-			log.Printf("Skipping attribute %s as no match found in supplied map\n", elem.Name.Local)
+			log.Printf("Skipping attribute %s as no match found in supplied map\n", attr.Name.Local)
 			continue
 		}
-		info[final] = convert(string(elem.Value), elemType)
+		info[final] = convert(string(attr.Value), attrType)
 	}
 	return
 }
@@ -151,16 +142,33 @@ func convert(cStr string, t string) (rv interface{}) {
 	case "bool":
 		rv = strings.Contains("YesTrue", cStr)
 	case "string":
-		rv = strings.ReplaceAll(cStr, "&quot;", "")
+		cStr = strings.ReplaceAll(cStr, "&quot;", "")
+		rv = strings.ReplaceAll(cStr, "\r", ", ")
 	case "date":
-		tm, err := time.Parse("2006-01-02", cStr)
+		var tm time.Time
+		var err error
+		if strings.Contains(cStr, "/") {
+			tm, err = time.Parse("02/01/2006", cStr)
+		} else {
+			tm, err = time.Parse("2006-01-02", cStr)
+		}
 		if err == nil {
 			rv = tm
 		} else {
 			log.Printf("Unable to convert '%s' into date: %s", cStr, err)
 		}
 	case "dateTime":
-		tm, err := time.Parse("2006-01-02 15:04:05", cStr)
+		var tm time.Time
+		var err error
+		if strings.Contains(cStr, "/") {
+			tm, err = time.Parse("02/01/2006 15:04:05", cStr)
+		} else {
+			if strings.Contains(cStr, "T") {
+				tm, err = time.Parse("2006-01-02T15:04:05", cStr)
+			} else {
+				tm, err = time.Parse("2006-01-02 15:04:05", cStr)
+			}
+		}
 		if err == nil {
 			rv = tm
 		} else {

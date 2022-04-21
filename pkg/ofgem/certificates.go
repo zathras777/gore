@@ -26,9 +26,9 @@ var certAttrMap = map[string]string{
 	"textbox24:StartCertificateNo":            "string",
 	"textbox27:EndCertificateNo":              "string",
 	"textbox37:MWhPerCertificate":             "float",
-	"textbox30:IssueDate":                     "date",
+	"textbox30:IssueDate":                     "dateTime",
 	"textbox33:CertificateStatus":             "string",
-	"textbox36:StatusDate":                    "date",
+	"textbox36:StatusDate":                    "dateTime",
 	"textbox39:CurrentHolderOrganisationName": "string",
 	"textbox45:CompanyRegistrationNumber":     "string",
 }
