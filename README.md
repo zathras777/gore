@@ -33,6 +33,8 @@ Available Commands
                        Ofgem: Search certificate database
            derbmdata - Elexon: DERBMDATA
                        Derived BM Unit Data - Multiple Result Sets
+          dersysdata - Elexon: DERSYSDATA
+                       Derived System Wide Data
             fuelinst - Elexon: FUELINST
                        Generation by Fuel Type (24H Instant Data)
        stationsearch - Ofgem Station Search
@@ -42,6 +44,8 @@ Available Commands
 Parameters and Flag Options
 ===========================
 
+-bmunit string
+        BMUnit to search for (Elexon or Ofgem)
   -date string
         Date to process for (format is YYYY-MM-DD)
   -elexonkey string
@@ -54,12 +58,12 @@ Parameters and Flag Options
         Log filename to write to (default "gore.log")
   -month int
         Specify a month (default -1)
-  -period string
-        Period to use (as string, YYYYMM). Overrides year & month
+  -name string
+        Name to search for (Elexon or Ofgem)
+  -period int
+        Settlement Period for Elexon (1-50) (default -1)
   -scheme string
         Ofgem Scheme (RO, REGO)
-  -settlementperiod int
-        Settlement Period for Elexon (1-50) (default -1)
   -v    Verbose output (disables logging to a file)
   -year int
         Specify a year (default -1)
@@ -110,6 +114,9 @@ Export completed
 
 
 ## Updates
+
+### 21st April 2022
+Found some issues with displaying Ofgem Station searches and so have adjusted the output to correct them. This led to realisation the date wasn't correct for the Certificate Search so that's also been updated :-) Along the way I rationalised the flags to remove the period as the year and month provide a better intreface. This allows settlementeriod to become simply period, which should make things simpler to use. Added the DERSYSDATA report from Elexon. Version 0.1.3-alpha pushed to capture these changes.
 
 ### 19th April 2022
 Tidied up the cmd app and actually started making it useful. Exporting to XML and JSON should now work, though not for the multiple return reports (presently only DERBMDATA) as I'm still trying to get my head around how to do that in a way that makes sense. There is a lot of potential for tidying up yet, but as Justin used to remind everyone, "premature optimisation is evil" so things are just as they are. The data that is returned seems reasonable and should be simple enough to understand. It's faster than pywind for all operations and while it doesn't quite have the same functionality it's not far from it. 
