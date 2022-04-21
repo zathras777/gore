@@ -125,11 +125,14 @@ var availableCommands = map[string]command{
 		"Ofgem: Search the station database",
 		formatterRow{
 			[]formatterColumn{
-				{"Accreditation", "AccreditationNumber", "string", 13, 0},
-				{"Station Name", "Station", "string", 30, 0},
+				{"Accreditation", "GeneratorID", "string", 13, 0},
+				{"Station Name", "GeneratorName", "string", 30, 0},
 				{"Capacity", "Capacity", "float", 10, 2},
-				{"Scheme", "Scheme", "string", 6, 0},
-				{"Technology", "TechnologyGroup", "string", 20, 0},
+				{"Scheme", "SchemeName", "string", 6, 0},
+				{"Status", "StatusName", "string", 6, 0},
+				{"Technology", "TechnologyName", "string", 20, 0},
+				{"Output Type", "OutputType", "string", 11, 0},
+				{"Commission Date", "CommissionDate", "date", 15, 0},
 			},
 		},
 	},
