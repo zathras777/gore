@@ -29,6 +29,9 @@ func ParseXML(content []byte) (nodes XmlNode, err error) {
 
 func (n XmlNode) Get(name string) (node XmlNode, err error) {
 	var found int
+	if strings.Contains(name, ":") {
+		name = strings.SplitN(name, ":", 2)[0]
+	}
 	if strings.Contains(name, ".") {
 		parts := strings.SplitN(name, ".", 2)
 		found = n.searchNodes(parts[0])
@@ -45,6 +48,9 @@ func (n XmlNode) Get(name string) (node XmlNode, err error) {
 }
 
 func (n XmlNode) GetAll(name string) (nodes []XmlNode, err error) {
+	if strings.Contains(name, ":") {
+		name = strings.SplitN(name, ":", 2)[0]
+	}
 	if strings.Contains(name, ".") {
 		parts := strings.SplitN(name, ".", 2)
 		var node XmlNode
@@ -74,13 +80,26 @@ func (n XmlNode) GetAsMap(name string, mapInfo map[string]string) (info map[stri
 
 func (n XmlNode) AsMap(mapInfo map[string]string) (info map[string]interface{}) {
 	info = make(map[string]interface{})
-	for _, elem := range n.Nodes {
-		t, ck := mapInfo[elem.XMLName.Local]
-		if !ck {
+	for key, typ := range mapInfo {
+		node, err := n.Get(key)
+		if err != nil {
 			continue
 		}
-		info[elem.XMLName.Local] = convert(string(elem.Content), t)
+		if strings.Contains(key, ":") {
+			info[strings.SplitN(key, ":", 2)[1]] = convert(string(node.Content), typ)
+		} else {
+			info[node.XMLName.Local] = convert(string(node.Content), typ)
+		}
 	}
+
+	//	for _, elem := range n.Nodes {
+	//		t, ck := mapInfo[elem.XMLName.Local]
+	//		if !ck {
+	//			continue
+	//		}
+	//		info[elem.XMLName.Local] = convert(string(elem.Content), t)
+	//	}
+
 	return
 }
 
@@ -132,7 +151,7 @@ func convert(cStr string, t string) (rv interface{}) {
 	case "bool":
 		rv = strings.Contains("YesTrue", cStr)
 	case "string":
-		rv = cStr
+		rv = strings.ReplaceAll(cStr, "&quot;", "")
 	case "date":
 		tm, err := time.Parse("2006-01-02", cStr)
 		if err == nil {

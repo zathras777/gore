@@ -107,6 +107,10 @@ func (ap *ElexonAPI) GetData(args map[string]string) error {
 
 	if len(ap.Report.Multi) == 0 {
 		ap.Result.Query = qr
+		if qr.Empty {
+			return nil
+		}
+
 		items, err := xmlN.GetAll("responseBody.responseList.item")
 		if err != nil {
 			return err
@@ -137,6 +141,14 @@ func queryResultFromResponse(xmlN gore.XmlNode) gore.QueryResult {
 	qr.Completed = true
 	if mMap["httpCode"].(int) != 200 && mMap["httpCode"].(int) != 204 {
 		qr.Error = fmt.Errorf("%s: %s", mMap["errorType"].(string), mMap["description"].(string))
+		return qr
+	}
+	if mMap["httpCode"].(int) == 204 {
+		qr.Empty = true
+		return qr
+	}
+	_, ck := mMap["cappingApplied"]
+	if !ck {
 		return qr
 	}
 	if mMap["cappingApplied"].(bool) {

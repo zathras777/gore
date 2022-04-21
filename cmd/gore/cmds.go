@@ -25,14 +25,25 @@ var availableCommands = map[string]command{
 		"Elexon: B1420",
 		"Installed Generation Capacity per Unit",
 		formatterRow{
-			[]formatterColumn{},
+			[]formatterColumn{
+				{"Unit ID", "registeredResourceName", "string", 20, 0},
+				{"Active?", "activeFlag", "bool", 10, 0},
+				{"Resource Type", "powerSystemResourceType", "string", 35, 0},
+				{"Voltage Limit", "voltageLimit", "int", 13, 0},
+				{"Capacity", "capacity", "int", 12, 2},
+			},
 		},
 	},
 	"b1610": {
 		"Elexon: B1610",
 		"Actual Generation Output per Generation Unit",
 		formatterRow{
-			[]formatterColumn{},
+			[]formatterColumn{
+				{"Unit", "nGCBMUnitID", "string", 15, 0},
+				{"Date", "settlementDate", "date", 12, 0},
+				{"Period", "settlementPeriod", "int", 6, 0},
+				{"Output", "output", "float", 12, 2},
+			},
 		},
 	},
 	"b1630": {
@@ -47,6 +58,21 @@ var availableCommands = map[string]command{
 		"Derived BM Unit Data - Multiple Result Sets",
 		formatterRow{
 			[]formatterColumn{},
+		},
+	},
+	"dersysdata": {
+		"Elexon: DERSYSDATA",
+		"Derived System Wide Data",
+		formatterRow{
+			[]formatterColumn{
+				{"Date", "settlementDate", "date", 10, 0},
+				{"Period", "settlementPeriod", "int", 6, 0},
+				{"Sell Price", "systemSellPrice", "float", 10, 4},
+				{"Buy Price", "systemBuyPrice", "float", 10, 4},
+				{"Offer Volume", "totalSystemAcceptedOfferVolume", "float", 12, 4},
+				{"Bid Volume", "totalSystemAcceptedBidVolume", "float", 12, 4},
+				{"Net Imbalance Volume", "indicativeNetImbalanceVolume", "float", 20, 4},
+			},
 		},
 	},
 	"fuelinst": {

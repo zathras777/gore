@@ -21,6 +21,7 @@ type QueryResult struct {
 	Error     error
 	Capped    bool
 	CapLimit  int
+	Empty     bool
 }
 
 type ResultItem struct {

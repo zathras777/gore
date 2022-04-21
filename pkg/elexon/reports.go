@@ -76,7 +76,8 @@ var ElexonReports = map[string]ElexonReport{
 			"year":                      "int",
 			"bMUnitID":                  "string",
 			"registeredResourceEICCode": "string",
-			"nominal":                   "int",
+			"nominal:capacity":          "int",
+			"voltageLimit":              "int",
 			"nGCBMUnitID":               "string",
 			"registeredResourceName":    "string",
 			"activeFlag":                "bool",
@@ -93,25 +94,25 @@ var ElexonReports = map[string]ElexonReport{
 		"Actual Generation Output per Generation Unit",
 		"v2",
 		map[string]string{
-			"documentType":                "string",
-			"businessType":                "string",
-			"processType":                 "string",
-			"timeSeriesID":                "string",
-			"curveType":                   "string",
-			"settlementDate":              "date",
-			"powerSystemResourceType":     "string",
-			"registeredResourceEICCode":   "string",
-			"marketGenerationUnitEICCode": "string",
-			"marketGenerationBMUId":       "string",
-			"marketGenerationNGCBMUId":    "string",
-			"bMUnitID":                    "string",
-			"nGCBMUnitID":                 "string",
-			"activeFlag":                  "bool",
-			"documentID":                  "string",
-			"documentRevNum":              "int",
-
-			//		<Period><timeInterval><start>2022-02-01</start><end>2022-02-01</end></timeInterval><resolution>PT30M</resolution><Point><settlementPeriod>30</settlementPeriod><quantity>63.47</quantity></Point></Period>
-
+			"documentType":                     "string",
+			"businessType":                     "string",
+			"processType":                      "string",
+			"timeSeriesID":                     "string",
+			"curveType":                        "string",
+			"settlementDate":                   "date",
+			"powerSystemResourceType":          "string",
+			"registeredResourceEICCode":        "string",
+			"marketGenerationUnitEICCode":      "string",
+			"marketGenerationBMUId":            "string",
+			"marketGenerationNGCBMUId":         "string",
+			"bMUnitID":                         "string",
+			"nGCBMUnitID":                      "string",
+			"activeFlag":                       "bool",
+			"documentID":                       "string",
+			"documentRevNum":                   "int",
+			"Period.Point.settlementPeriod":    "int",
+			"Period.Point.quantity:output":     "float",
+			"Period.resolution:timeResolution": "string",
 		},
 		[]string{"SettlementDate", "Period"},
 		map[string]string{},
@@ -152,6 +153,36 @@ var ElexonReports = map[string]ElexonReport{
 		map[string]string{},
 		nil,
 	},
+	"dersysdata": {
+		"DERSYSDATA",
+		"Derived System Wide Data",
+		"v1",
+		map[string]string{
+			"recordType":                            "string",
+			"settlementDate":                        "date",
+			"settlementPeriod":                      "int",
+			"systemSellPrice":                       "float",
+			"systemBuyPrice":                        "float",
+			"bSADDefault":                           "string",
+			"priceDerivationCode":                   "string",
+			"reserveScarcityPrice":                  "float",
+			"indicativeNetImbalanceVolume":          "float",
+			"sellPriceAdjustment":                   "float",
+			"buyPriceAdjustment":                    "float",
+			"totalSystemAcceptedOfferVolume":        "float",
+			"totalSystemAcceptedBidVolume":          "float",
+			"totalSystemTaggedAcceptedOfferVolume":  "float",
+			"totalSystemTaggedAcceptedBidVolume":    "float",
+			"totalSystemAdjustmentSellVolume":       "float",
+			"totalSystemAdjustmentBuyVolume":        "float",
+			"totalSystemTaggedAdjustmentSellVolume": "float",
+			"totalSystemTaggedAdjustmentBuyVolume":  "float",
+			"activeFlag":                            "bool",
+		},
+		[]string{},
+		map[string]string{},
+		nil,
+	},
 	"fuelinst": {
 		"FUELINST",
 		"Generation by Fuel Type (24H Instant Data)",
@@ -185,6 +216,12 @@ var ElexonReports = map[string]ElexonReport{
 		map[string]string{},
 		nil,
 	},
+	"bmunitsearch": {
+		Name:         "BMUNITSEARCH",
+		Description:  "BM Unit Search",
+		Version:      "v1",
+		updateParams: searchNames,
+	},
 }
 
 func textMonth(current url.Values) {
@@ -196,6 +233,19 @@ func textMonth(current url.Values) {
 			} else {
 				current.Set(k, strings.ToUpper(time.Month(num).String()[:3]))
 			}
+		}
+	}
+}
+
+func searchNames(current url.Values) {
+	for k, v := range current {
+		if k == "Name" {
+			current.Del(k)
+			current.Add("NGCBMUnitName", v[0])
+		}
+		if k == "BMUnit" {
+			current.Del(k)
+			current.Add("BMUnitId", v[0])
 		}
 	}
 }

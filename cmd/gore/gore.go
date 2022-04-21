@@ -23,17 +23,18 @@ func main() {
 	fmt.Println(createTitle("UK Renewables App"))
 
 	var (
-		logFn            string
-		verbose          bool
-		year             int
-		month            int
-		period           string
-		date             string
-		scheme           string
-		settlementPeriod int
-		xportFormat      string
-		xportFilename    string
-		err              error
+		logFn         string
+		verbose       bool
+		year          int
+		month         int
+		period        int
+		date          string
+		scheme        string
+		name          string
+		bmunit        string
+		xportFormat   string
+		xportFilename string
+		err           error
 	)
 
 	flag.Usage = func() {
@@ -50,9 +51,10 @@ func main() {
 	flag.IntVar(&year, "year", -1, "Specify a year")
 	flag.IntVar(&month, "month", -1, "Specify a month")
 	flag.StringVar(&date, "date", "", "Date to process for (format is YYYY-MM-DD)")
-	flag.IntVar(&settlementPeriod, "settlementperiod", -1, "Settlement Period for Elexon (1-50)")
-	flag.StringVar(&period, "period", "", "Period to use (as string, YYYYMM). Overrides year & month")
+	flag.IntVar(&period, "period", -1, "Settlement Period for Elexon (1-50)")
 	flag.StringVar(&scheme, "scheme", "", "Ofgem Scheme (RO, REGO)")
+	flag.StringVar(&name, "name", "", "Name to search for (Elexon or Ofgem)")
+	flag.StringVar(&bmunit, "bmunit", "", "BMUnit to search for (Elexon or Ofgem)")
 	flag.StringVar(&xportFormat, "exportformat", "", "Export format [json, xml, csv]")
 	flag.StringVar(&xportFilename, "exportfilename", "", "Filename for exported data")
 
@@ -69,30 +71,6 @@ func main() {
 		log.SetOutput(f)
 	}
 
-	if period != "" {
-		if verbose {
-			fmt.Println("Overriding any set year and month as period supplied")
-		}
-		if len(period) != 6 {
-			fmt.Printf("Period MUST be 6 characters in the format YYYYMM, e.g. 202201, not %s\n", period)
-			fmt.Printf("Did you mean to use -settlementperiod ?")
-			return
-		}
-		year, err = strconv.Atoi(period[:4])
-		if err != nil {
-			fmt.Printf("Invalid YYYY for period, %s: %s\n", period[:4], err)
-			return
-		}
-		month, err = strconv.Atoi((period[4:]))
-		if err != nil {
-			fmt.Printf("Invalid MM for period, %s: %s\n", period[4:], err)
-			return
-		}
-		if month < 1 || month > 12 {
-			fmt.Printf("Invalid month. Must be between 1 and 12, not %d\n", month)
-			return
-		}
-	}
 	params := make(map[string]string)
 	if year != -1 {
 		if year < 100 {
@@ -107,18 +85,24 @@ func main() {
 		}
 		params["Month"] = fmt.Sprintf("%d", month)
 	}
-	if settlementPeriod != -1 {
-		if settlementPeriod < 1 || settlementPeriod > 50 {
-			fmt.Printf("Settlement Period must be between 1 and 50 - not %d\n", settlementPeriod)
+	if period != -1 {
+		if period < 1 || period > 50 {
+			fmt.Printf("Settlement Period must be between 1 and 50 - not %d\n", period)
 			return
 		}
-		params["Period"] = fmt.Sprintf("%d", settlementPeriod)
+		params["Period"] = fmt.Sprintf("%d", period)
 	}
 	if date != "" {
 		params["SettlementDate"] = date
 	}
 	if scheme != "" {
 		params["Scheme"] = scheme
+	}
+	if name != "" {
+		params["Name"] = name
+	}
+	if bmunit != "" {
+		params["NGCBMUnitID"] = bmunit
 	}
 
 	if verbose {
@@ -162,7 +146,8 @@ func main() {
 	}
 
 	cmd, ck := availableCommands[strings.ToLower(result.QueryName)]
-	if ck {
+	if ck && len(cmd.formatter.columns) > 0 {
+		fmt.Println(createTitle(cmd.name + " Output"))
 		fmt.Println(cmd.formatter.formatTitles())
 		cmd.formatter.printRows(result.Results)
 	}

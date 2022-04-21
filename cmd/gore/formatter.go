@@ -60,7 +60,11 @@ func (fr formatterRow) printRows(items []gore.ResultItem) {
 			case "float":
 				dd = item.Float(col.field)
 			case "bool":
-				dd = item.Bool(col.field)
+				if item.Bool(col.field) {
+					dd = "Yes"
+				} else {
+					dd = "No"
+				}
 			case "date":
 				dt := item.Date(col.field)
 				dd = dt.Format("2006-01-02")
@@ -82,13 +86,12 @@ func (fr formatterRow) printRows(items []gore.ResultItem) {
 func (fc formatterColumn) formatString() (fmtString string) {
 	fmtString = "%"
 	switch fc.format {
-	case "string", "date", "time", "datetime":
+	case "string", "date", "time", "datetime", "bool":
 		fmtString += fmt.Sprintf("-%ds", fc.width)
 	case "int":
 		fmtString += fmt.Sprintf("%dd", fc.width)
 	case "float":
-		n := fc.width - fc.decimals - 1
-		fmtString += fmt.Sprintf("%d.%df", n, fc.decimals)
+		fmtString += fmt.Sprintf("%d.%df", fc.width, fc.decimals)
 	}
 	return
 }
