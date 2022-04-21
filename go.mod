@@ -1,4 +1,4 @@
-module gore
+module github.com/zathras777/gore
 
 go 1.18
 
