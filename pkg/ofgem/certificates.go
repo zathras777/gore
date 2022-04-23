@@ -104,6 +104,14 @@ func (cs *CertificateSearch) GetResults() (result gore.ResultSet) {
 	for _, detail := range details {
 		info := detail.AttrAsMap(certAttrMap)
 		info["MWh"] = float64(info["NoOfCertificates"].(int)) * info["MWhPerCertificate"].(float64)
+		if strings.Contains(info["OutputPeriod"].(string), "-") {
+			// Change 01/02/2022 - 28/02/2022 into Feb-2022
+			dtStr := strings.SplitN(info["OutputPeriod"].(string), " - ", 2)[0]
+			dt, err := time.Parse("02/01/2006", dtStr)
+			if err == nil {
+				info["OutputPeriod"] = fmt.Sprintf("%s-%d", dt.Month().String()[:3], dt.Year())
+			}
+		}
 		result.Results = append(result.Results, gore.ResultItem{Data: info})
 	}
 	return

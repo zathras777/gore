@@ -110,10 +110,12 @@ Export completed
 - ~~reduce the verbosity and improve the logging~~
 - add testing
 - add docs on how to use command line app
-- add csv export
 
 
 ## Updates
+
+### 23rd APRIL 2022
+The period string returned in certificate search results can be the simpler "Feb-2022" or the rather less helpful "01/02/2022 - 28/02/2022". Small change to fix this and ensure the "Feb-2022" format is returned in results.
 
 ### 21st April 2022
 Found some issues with displaying Ofgem Station searches and so have adjusted the output to correct them. This led to realisation the date wasn't correct for the Certificate Search so that's also been updated :-) Along the way I rationalised the flags to remove the period as the year and month provide a better intreface. This allows settlementeriod to become simply period, which should make things simpler to use. Added the DERSYSDATA report from Elexon. Version 0.1.3-alpha pushed to capture these changes.
