@@ -114,5 +114,8 @@ func (cs *CertificateSearch) GetResults() (result gore.ResultSet) {
 		}
 		result.Results = append(result.Results, gore.ResultItem{Data: info})
 	}
+	if len(result.Results) == 0 {
+		result.Query.Empty = true
+	}
 	return
 }

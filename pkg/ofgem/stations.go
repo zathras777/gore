@@ -81,5 +81,8 @@ func (ss *StationSearch) GetResults() (result gore.ResultSet) {
 	for _, detail := range details {
 		result.Results = append(result.Results, gore.ResultItem{Data: detail.AttrAsMap(stationAttrMap)})
 	}
+	if len(result.Results) == 0 {
+		result.Query.Empty = true
+	}
 	return
 }
