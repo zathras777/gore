@@ -43,7 +43,8 @@ func (ap *ElexonAPI) ReadKeyFile(keyFn string) error {
 	if err != nil {
 		return fmt.Errorf("Unable to read API key from %s: %s", keyFn, err)
 	}
-	ap.key = strings.Trim(string(content), " ")
+	ap.key = strings.Trim(string(content), "\n")
+	ap.key = strings.Trim(ap.key, " ")
 	return nil
 }
 

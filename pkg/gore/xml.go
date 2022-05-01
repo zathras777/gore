@@ -126,18 +126,26 @@ func (n XmlNode) AttrAsMap(mapInfo map[string]string) (info map[string]interface
 func convert(cStr string, t string) (rv interface{}) {
 	switch t {
 	case "int":
+		if cStr == "NULL" {
+			rv = 0
+			break
+		}
 		num, err := strconv.Atoi(cStr)
 		if err == nil {
 			rv = num
 		} else {
-			log.Printf("Unable to convert %s to a number", cStr)
+			log.Printf("Unable to convert %s to an int", cStr)
 		}
 	case "float":
+		if cStr == "NULL" {
+			rv = 0.0
+			break
+		}
 		num, err := strconv.ParseFloat(cStr, 64)
 		if err == nil {
 			rv = num
 		} else {
-			log.Printf("Unable to convert %s to a number", cStr)
+			log.Printf("Unable to convert %s to a float", cStr)
 		}
 	case "bool":
 		rv = strings.Contains("YesTrue", cStr)

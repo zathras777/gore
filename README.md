@@ -111,8 +111,10 @@ Export completed
 - add testing
 - add docs on how to use command line app
 
-
 ## Updates
+
+### 1st May 2022
+Catch NULL for a number and return a suitable zero value when converting to a number. Additionally remove newlines from key file as these prevent the key from being recognised.
 
 ### 23rd APRIL 2022
 The period string returned in certificate search results can be the simpler "Feb-2022" or the rather less helpful "01/02/2022 - 28/02/2022". Small change to fix this and ensure the "Feb-2022" format is returned in results.
