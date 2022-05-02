@@ -128,7 +128,7 @@ func main() {
 			result, err = processElexonCommand(cmd, params)
 		}
 		if err != nil {
-			fmt.Printf("Unable to process command %s\nError: %s", cmd, err)
+			fmt.Printf("Unable to process command %s\nError: %s\n", cmd, err)
 			return
 		}
 	}
@@ -182,7 +182,7 @@ func printAvailableCommands() {
 func processElexonCommand(cmd string, params map[string]string) (gore.ResultSet, error) {
 	ap, err := elexon.NewElexonReport(cmd)
 	if err != nil {
-		return gore.ResultSet{QueryName: ap.Report.Name}, err
+		return gore.ResultSet{QueryName: cmd}, err
 	}
 	fmt.Printf("Getting data for Elexon Report %s [ %s ]...\n", ap.Report.Name, ap.Report.Description)
 	if err = ap.ReadKeyFile(elexonKeyFn); err != nil {

@@ -13,9 +13,10 @@
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
-gore
+/gore
 cmd/gore/gore
 cmd/gore/output
+
 *.xml
 *.json
 *.csv
