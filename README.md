@@ -115,6 +115,10 @@ Export completed
 
 ## Updates
 
+### 27th May 2022
+
+Some Ofgem records have a nil entry for the Accreditation Date. Catch this and return a default value of today.
+
 ### 2nd May 2022
 
 Fix a silly bug in the command line app and correct some syntax in the README file.
