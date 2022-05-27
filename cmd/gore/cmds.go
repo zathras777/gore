@@ -133,6 +133,7 @@ var availableCommands = map[string]command{
 				{"Technology", "TechnologyName", "string", 20, 0},
 				{"Output Type", "OutputType", "string", 11, 0},
 				{"Commission Date", "CommissionDate", "date", 15, 0},
+				{"Accreditation Date", "AccreditationDate", "date", 15, 0},
 			},
 		},
 	},

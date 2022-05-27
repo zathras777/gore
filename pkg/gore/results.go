@@ -62,7 +62,7 @@ func (ri ResultItem) Bool(name string) bool {
 
 func (ri ResultItem) Date(name string) time.Time {
 	v, ck := ri.Data[name]
-	if !ck {
+	if !ck || v == nil {
 		return time.Now()
 	}
 	return v.(time.Time)
