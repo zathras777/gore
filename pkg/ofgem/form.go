@@ -57,7 +57,7 @@ func newForm(start string) *form {
 		labels:    make(map[string]string),
 	}
 	if err := form.get(); err != nil {
-		log.Fatalf("Unable to create a new form instance for URL %s", start)
+		log.Fatalf("Unable to create a new form instance for URL %s\n%v", start, err)
 	}
 	return form
 }
