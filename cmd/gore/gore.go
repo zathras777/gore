@@ -89,6 +89,10 @@ func main() {
 	}
 
 	if cmd.flags == nil {
+		if strings.Contains(os.Args[1], "help") {
+			showUsage()
+			return
+		}
 		fmt.Printf("\nUnknown command: %s\n", os.Args[1])
 		printAvailableCommands()
 		return
