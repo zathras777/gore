@@ -1,9 +1,13 @@
 package main
 
+import "flag"
+
 type command struct {
 	name        string
 	description string
 	formatter   formatterRow
+	flags       *flag.FlagSet
+	reportTag   string
 }
 
 var availableCommands = map[string]command{
@@ -13,6 +17,8 @@ var availableCommands = map[string]command{
 		formatterRow{
 			[]formatterColumn{},
 		},
+		elexonFlags,
+		"b1320",
 	},
 	"b1330": {
 		"Elexon: B1330",
@@ -20,6 +26,8 @@ var availableCommands = map[string]command{
 		formatterRow{
 			[]formatterColumn{},
 		},
+		elexonFlags,
+		"b1330",
 	},
 	"b1420": {
 		"Elexon: B1420",
@@ -33,6 +41,8 @@ var availableCommands = map[string]command{
 				{"Capacity", "capacity", "int", 12, 2},
 			},
 		},
+		elexonFlags,
+		"b1420",
 	},
 	"b1610": {
 		"Elexon: B1610",
@@ -45,6 +55,8 @@ var availableCommands = map[string]command{
 				{"Output", "output", "float", 12, 2},
 			},
 		},
+		elexonFlags,
+		"b1610",
 	},
 	"b1630": {
 		"Elexon: B1630",
@@ -52,6 +64,8 @@ var availableCommands = map[string]command{
 		formatterRow{
 			[]formatterColumn{},
 		},
+		elexonFlags,
+		"b1630",
 	},
 	"derbmdata": {
 		"Elexon: DERBMDATA",
@@ -59,6 +73,8 @@ var availableCommands = map[string]command{
 		formatterRow{
 			[]formatterColumn{},
 		},
+		elexonFlags,
+		"derbmdata",
 	},
 	"dersysdata": {
 		"Elexon: DERSYSDATA",
@@ -74,6 +90,8 @@ var availableCommands = map[string]command{
 				{"Net Imbalance Volume", "indicativeNetImbalanceVolume", "float", 20, 4},
 			},
 		},
+		elexonFlags,
+		"dersysdata",
 	},
 	"fuelinst": {
 		"Elexon: FUELINST",
@@ -103,6 +121,8 @@ var availableCommands = map[string]command{
 				{"IntNSL", "intnsl", "int", 8, 0},
 			},
 		},
+		elexonFlags,
+		"fuelinst",
 	},
 	"certificatesearch": {
 		"Ofgem Certificate Search",
@@ -119,6 +139,8 @@ var availableCommands = map[string]command{
 				{"MWh Output", "MWh", "float", 10, 1},
 			},
 		},
+		ofgemFlags,
+		"certificatesearch",
 	},
 	"stationsearch": {
 		"Ofgem Station Search",
@@ -136,5 +158,7 @@ var availableCommands = map[string]command{
 				{"Accreditation Date", "AccreditationDate", "date", 15, 0},
 			},
 		},
+		ofgemFlags,
+		"stationsearch",
 	},
 }

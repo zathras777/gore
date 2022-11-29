@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/zathras777/gore/pkg/elexon"
 	"github.com/zathras777/gore/pkg/gore"
@@ -15,9 +16,25 @@ import (
 )
 
 var elexonKeyFn string
+var ofgemFlags *flag.FlagSet = flag.NewFlagSet("ofgem", flag.ExitOnError)
+var elexonFlags *flag.FlagSet = flag.NewFlagSet("elexon", flag.ExitOnError)
+var stdFlags *flag.FlagSet = flag.NewFlagSet("common", flag.ExitOnError)
 
 func createTitle(title string) string {
 	return "\n" + title + "\n" + strings.Repeat("=", len(title)) + "\n\n"
+}
+
+func showUsage() {
+	fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
+	fmt.Printf("\n%s command [parameters] [flags]\n", os.Args[0])
+	printAvailableCommands()
+	fmt.Println(createTitle("Options"))
+	fmt.Println("Options available for all commands:")
+	stdFlags.PrintDefaults()
+	fmt.Println("\nOptions available for Ofgem commands:")
+	ofgemFlags.PrintDefaults()
+	fmt.Println("\nOptions available for Elexon commands:")
+	elexonFlags.PrintDefaults()
 }
 
 func main() {
@@ -36,30 +53,60 @@ func main() {
 		xportFormat   string
 		xportFilename string
 		err           error
+		cmd           command
 	)
 
-	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
-		fmt.Printf("\n%s [parameters] [flags] [command]\n", os.Args[0])
-		printAvailableCommands()
-		fmt.Printf(createTitle("Parameters and Flag Options"))
-		flag.PrintDefaults()
+	flag.Usage = showUsage
+
+	ofgemFlags.IntVar(&year, "year", -1, "Specify a year")
+	ofgemFlags.IntVar(&month, "month", -1, "Specify a month")
+	ofgemFlags.StringVar(&scheme, "scheme", "", "Ofgem Scheme (RO, REGO)")
+
+	elexonFlags.StringVar(&elexonKeyFn, "elexonkey", "elexon.key", "Elexon API Key (required for all Elexon commands)")
+	elexonFlags.StringVar(&bmunit, "bmunit", "", "BMUnit to search for (Elexon or Ofgem)")
+	elexonFlags.StringVar(&date, "date",
+		time.Now().Add(time.Hour*-24).Format("2006-01-02"),
+		"Date to process for (format is YYYY-MM-DD) (defaults to yesterday)")
+	elexonFlags.IntVar(&period, "period", -1, "Settlement Period for Elexon (1-50)")
+
+	stdFlags.StringVar(&logFn, "log", "gore.log", "Log filename to write to")
+	stdFlags.BoolVar(&verbose, "v", false, "Verbose output (disables logging to a file)")
+	stdFlags.StringVar(&name, "name", "", "Name to search for")
+	stdFlags.StringVar(&xportFormat, "exportformat", "", "Export format [json, xml, csv]")
+	stdFlags.StringVar(&xportFilename, "exportfilename", "", "Filename for exported data")
+
+	if len(os.Args) < 2 {
+		fmt.Println("At least a command MUST be supplied.")
+		showUsage()
+		return
 	}
 
-	flag.StringVar(&elexonKeyFn, "elexonkey", "elexon.key", "Elexon API Key (required for all Elexon commands)")
-	flag.StringVar(&logFn, "log", "gore.log", "Log filename to write to")
-	flag.BoolVar(&verbose, "v", false, "Verbose output (disables logging to a file)")
-	flag.IntVar(&year, "year", -1, "Specify a year")
-	flag.IntVar(&month, "month", -1, "Specify a month")
-	flag.StringVar(&date, "date", "", "Date to process for (format is YYYY-MM-DD)")
-	flag.IntVar(&period, "period", -1, "Settlement Period for Elexon (1-50)")
-	flag.StringVar(&scheme, "scheme", "", "Ofgem Scheme (RO, REGO)")
-	flag.StringVar(&name, "name", "", "Name to search for (Elexon or Ofgem)")
-	flag.StringVar(&bmunit, "bmunit", "", "BMUnit to search for (Elexon or Ofgem)")
-	flag.StringVar(&xportFormat, "exportformat", "", "Export format [json, xml, csv]")
-	flag.StringVar(&xportFilename, "exportfilename", "", "Filename for exported data")
+	for arg, possCmd := range availableCommands {
+		if os.Args[1] == arg {
+			cmd = possCmd
+			break
+		}
+	}
 
-	flag.Parse()
+	if cmd.flags == nil {
+		fmt.Printf("\nUnknown command: %s\n", os.Args[1])
+		printAvailableCommands()
+		return
+	}
+
+	// As we can't combine flag sets, we just copy in the flags we need....
+	for _, arg := range os.Args[2:] {
+		if !strings.HasPrefix(arg, "-") {
+			continue
+		}
+		flag := stdFlags.Lookup(arg[1:])
+		if flag != nil {
+			cmd.flags.Var(flag.Value, arg[1:], "")
+		}
+	}
+
+	fmt.Printf("Running %s: %s\n", cmd.name, cmd.description)
+	cmd.flags.Parse(os.Args[2:])
 
 	if verbose {
 		fmt.Println("Logging to command line only. Log file disabled.")
@@ -110,27 +157,31 @@ func main() {
 		fmt.Printf("Params for Query: %v\n", params)
 	}
 
-	if len(flag.Args()) == 0 {
-		fmt.Println("No command entered.")
-		flag.Usage()
-		return
+	var result gore.ResultSet
+	switch cmd.reportTag {
+	case "stationsearch":
+		result, err = doStationSearch(params)
+	case "certificatesearch":
+		result, err = doCertificateSearch(params)
+	default:
+		var ap *elexon.ElexonAPI
+		ap, err = elexon.NewElexonReport(cmd.reportTag)
+		if err != nil {
+			result = gore.ResultSet{QueryName: cmd.reportTag}
+			break
+		}
+		fmt.Printf("Getting data for Elexon Report %s [ %s ]...\n", ap.Report.Name, ap.Report.Description)
+		err = ap.ReadKeyFile(elexonKeyFn)
+		if err == nil {
+			if err = ap.GetData(params); err == nil {
+				result = ap.Result
+			}
+		}
 	}
 
-	var result gore.ResultSet
-
-	for _, cmd := range flag.Args() {
-		switch strings.ToLower(cmd) {
-		case "certificatesearch":
-			result, err = doCertificateSearch(params)
-		case "stationsearch":
-			result, err = doStationSearch(params)
-		default:
-			result, err = processElexonCommand(cmd, params)
-		}
-		if err != nil {
-			fmt.Printf("Unable to process command %s\nError: %s\n", cmd, err)
-			return
-		}
+	if err != nil {
+		fmt.Println(err)
+		result = gore.ResultSet{}
 	}
 
 	if !result.Query.Completed {
@@ -177,21 +228,6 @@ func printAvailableCommands() {
 		fmt.Printf("%s%s\n", strings.Repeat(" ", 23), cmdData.description)
 	}
 	fmt.Println()
-}
-
-func processElexonCommand(cmd string, params map[string]string) (gore.ResultSet, error) {
-	ap, err := elexon.NewElexonReport(cmd)
-	if err != nil {
-		return gore.ResultSet{QueryName: cmd}, err
-	}
-	fmt.Printf("Getting data for Elexon Report %s [ %s ]...\n", ap.Report.Name, ap.Report.Description)
-	if err = ap.ReadKeyFile(elexonKeyFn); err != nil {
-		fmt.Println(err)
-		return gore.ResultSet{}, err
-	}
-
-	err = ap.GetData(params)
-	return ap.Result, err
 }
 
 func doCertificateSearch(params map[string]string) (gore.ResultSet, error) {
