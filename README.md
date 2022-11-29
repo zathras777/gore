@@ -15,8 +15,13 @@ Presently there are a few things working :-)
 gore $ cd cmd/gore
 gore/cmd/gore $ go build
 gore/cmd/gore $ ./gore.exe -help
-gore.exe [parameters] [flags] [command]
+UK Renewables App
+=================
 
+
+Usage of ./gore:
+
+./gore command [parameters] [flags]
 
 Available Commands
 ==================
@@ -42,33 +47,38 @@ Available Commands
        stationsearch - Ofgem Station Search
                        Ofgem: Search the station database
 
+Options
+=======
 
-Parameters and Flag Options
-===========================
 
--bmunit string
-        BMUnit to search for (Elexon or Ofgem)
-  -date string
-        Date to process for (format is YYYY-MM-DD)
-  -elexonkey string
-        Elexon API Key (required for all Elexon commands) (default "elexon.key")
+Options available for all commands:
   -exportfilename string
-        Filename for exported data
+    	Filename for exported data
   -exportformat string
-        Export format [json, xml, csv]
+    	Export format [json, xml, csv]
   -log string
-        Log filename to write to (default "gore.log")
-  -month int
-        Specify a month (default -1)
+    	Log filename to write to (default "gore.log")
   -name string
-        Name to search for (Elexon or Ofgem)
-  -period int
-        Settlement Period for Elexon (1-50) (default -1)
+    	Name to search for
+  -v	Verbose output (disables logging to a file)
+
+Options available for Ofgem commands:
+  -month int
+    	Specify a month (default -1)
   -scheme string
-        Ofgem Scheme (RO, REGO)
-  -v    Verbose output (disables logging to a file)
+    	Ofgem Scheme (RO, REGO)
   -year int
-        Specify a year (default -1)
+    	Specify a year (default -1)
+
+Options available for Elexon commands:
+  -bmunit string
+    	BMUnit to search for (Elexon or Ofgem)
+  -date string
+    	Date to process for (format is YYYY-MM-DD) (defaults to yesterday) (default "2022-11-28")
+  -elexonkey string
+    	Elexon API Key (required for all Elexon commands) (default "elexon.key")
+  -period int
+    	Settlement Period for Elexon (1-50) (default -1)
 ```
 
 Some of it even works :-) For example,
@@ -114,6 +124,14 @@ Export completed
 - add docs on how to use command line app
 
 ## Updates
+
+### 29th Nov 2022
+
+I've reworked the gore app to accept the command as the first argument and then parse the arguments following. It's a bit of a hack to get the arguments processed, but it works and makes the code easier to maintain. Also, this feels more obvious when picking this up after a long absence (ahem). Given this changes usage the version will move to 0.2.0-alpha.
+
+I also improved the error logging to show the error in one case where it wasn't obvious what was wrong. Hotel WiFi has a lot to answer for.
+
+This code has always been covered by the Unlicence, but I hadn't included it in the repository. Now I have :-)
 
 ### 27th May 2022
 
